@@ -9,3 +9,4 @@ describe('App', () => {
     expect(document.body).toBeInTheDocument();
   });
 });
+
