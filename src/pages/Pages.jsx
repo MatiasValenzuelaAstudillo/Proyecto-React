@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { categorias, formatoCLP, productos } from '../data/productos';
 import { useCart } from '../context/CartContext';
@@ -12,7 +12,56 @@ export function Carrito() { const { items, total, cambiarCantidad, eliminar } = 
 
 export function Nosotros() { return <main className="about-page container"><section className="about-hero"><div><span className="eyebrow">Nuestra historia</span><h1>Creemos en una forma más <em>natural</em> de vivir.</h1><p>HuertoHogar nació con una idea simple: acercar los sabores del campo a las familias, apoyando a productores locales y cuidando cada etapa del camino.</p></div><img src="/assets/img/zanahorias.jpg" alt="Cosecha de zanahorias" /></section><section className="about-grid"><div><span className="big-number">7+</span><p>productos cultivados y seleccionados con dedicación.</p></div><div><span className="big-number">100%</span><p>compromiso con la frescura y el origen local.</p></div><div><span className="big-number">1</span><p>comunidad creciendo alrededor de una mesa.</p></div></section></main>; }
 
-export function Login() { const [email, setEmail] = useState(''); const navigate = useNavigate(); const submit = (e) => { e.preventDefault(); localStorage.setItem('usuario', JSON.stringify({ email })); navigate('/perfil'); }; return <AuthLayout title="Qué bueno verte" subtitle="Ingresa a tu cuenta para continuar."><form onSubmit={submit} className="auth-form"><label>Correo electrónico<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" /></label><label>Contraseña<input type="password" required minLength="4" placeholder="••••••••" /></label><button className="btn btn-primary btn-full">Iniciar sesión</button><p className="auth-switch">¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link></p></form></AuthLayout>; }
+export function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState({ field: '', message: '' });
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const navigate = useNavigate();
+  const clearError = (field) => {
+    setError((current) => current.field === field ? { field: '', message: '' } : current);
+  };
+
+  const submit = (e) => {
+    e.preventDefault();
+
+    if (!password) {
+      setError({ field: 'password', message: 'Ingresa una contraseña.' });
+      passwordRef.current.focus();
+      return;
+    }
+    if (password.length < 4) {
+      setError({ field: 'password', message: 'La contraseña debe tener al menos 4 caracteres.' });
+      passwordRef.current.focus();
+      return;
+    }
+    if (!emailRef.current.checkValidity()) {
+      setError({ field: 'email', message: email ? 'Ingresa un correo electrónico válido.' : 'Ingresa tu correo electrónico.' });
+      emailRef.current.focus();
+      return;
+    }
+
+    setError({ field: '', message: '' });
+    localStorage.setItem('usuario', JSON.stringify({ email }));
+    navigate('/perfil');
+  };
+
+  return <AuthLayout title="Qué bueno verte" subtitle="Ingresa a tu cuenta para continuar.">
+    <form onSubmit={submit} className="auth-form" noValidate>
+      <label>Correo electrónico
+        <input ref={emailRef} type="email" required value={email} onChange={(e) => { setEmail(e.target.value); clearError('email'); }} placeholder="tu@correo.com" />
+        {error.field === 'email' && <small className="field-error" role="alert">{error.message}</small>}
+      </label>
+      <label>Contraseña
+        <input ref={passwordRef} type="password" required minLength="4" value={password} onChange={(e) => { setPassword(e.target.value); clearError('password'); }} placeholder="••••••••" />
+        {error.field === 'password' && <small className="field-error" role="alert">{error.message}</small>}
+      </label>
+      <button className="btn btn-primary btn-full">Iniciar sesión</button>
+      <p className="auth-switch">¿No tienes cuenta? <Link to="/registro">Regístrate aquí</Link></p>
+    </form>
+  </AuthLayout>;
+}
 export function Registro() { const [nombre, setNombre] = useState(''); const [email, setEmail] = useState(''); const navigate = useNavigate(); const submit = (e) => { e.preventDefault(); localStorage.setItem('usuario', JSON.stringify({ nombre, email })); navigate('/perfil'); }; return <AuthLayout title="Bienvenido a casa" subtitle="Crea tu cuenta y disfruta de lo mejor del campo."><form onSubmit={submit} className="auth-form"><label>Nombre completo<input required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Tu nombre" /></label><label>Correo electrónico<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@correo.com" /></label><label>Contraseña<input type="password" required minLength="4" placeholder="Crea una contraseña" /></label><button className="btn btn-primary btn-full">Crear mi cuenta</button><p className="auth-switch">¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link></p></form></AuthLayout>; }
 function AuthLayout({ title, subtitle, children }) { return <main className="auth-page container"><div className="auth-card"><div className="auth-brand"><span className="eyebrow">HuertoHogar</span><h1>{title}</h1><p>{subtitle}</p></div>{children}</div></main>; }
 export function Perfil() { let usuario = {}; try { usuario = JSON.parse(localStorage.getItem('usuario')) || {}; } catch {} return <main className="profile-page container"><div className="profile-card"><div className="avatar">{(usuario.nombre || usuario.email || 'H').charAt(0).toUpperCase()}</div><span className="eyebrow">Mi cuenta</span><h1>{usuario.nombre || 'Tu perfil'}</h1><p>{usuario.email || 'Inicia sesión para ver tus datos.'}</p>{usuario.email ? <Link className="btn btn-secondary" to="/productos">Seguir comprando</Link> : <Link className="btn btn-primary" to="/login">Iniciar sesión</Link>}</div></main>; }
