@@ -1,12 +1,87 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { categorias, formatoCLP, productos } from '../data/productos';
+import { formatoCLP } from '../data/productos';
+import { useProductos } from '../context/ProductosContext';
 import { useCart } from '../context/CartContext';
 import ProductCard from '../components/ProductCard';
 
 export function Home() { return <main><section className="hero container"><div className="hero-copy"><span className="eyebrow">Frescura que se nota</span><h1>Del campo a tu mesa, <em>con cariño.</em></h1><p>Productos frescos, naturales y de origen local para alimentar los momentos que importan.</p><Link to="/productos" className="btn btn-primary">Explorar productos <span>→</span></Link></div><div className="hero-art"><div className="hero-circle"><img src="/assets/img/manzanas-fuji.jpg" alt="Manzanas frescas" /></div><div className="floating-card"><strong>100%</strong><span>fresco y local</span></div></div></section><section className="values container"><div><span>01</span><h3>Directo del campo</h3><p>Trabajamos con productores locales para que recibas lo mejor.</p></div><div><span>02</span><h3>Calidad natural</h3><p>Seleccionamos cada producto con cuidado y compromiso.</p></div><div><span>03</span><h3>Para tu hogar</h3><p>Tu compra llega con la frescura y el sabor que mereces.</p></div></section></main>; }
 
-export function Productos() { const [filtro, setFiltro] = useState('todos'); const visibles = filtro === 'todos' ? productos : productos.filter((p) => p.categoria === filtro); return <main className="catalog-page container"><div className="section-heading"><div><span className="eyebrow">Nuestra selección</span><h1>Productos frescos</h1></div><p>Explora nuestra variedad de productos frescos y naturales para tu hogar.</p></div><div className="filters">{categorias.map((cat) => <button key={cat.value} className={filtro === cat.value ? 'filter active' : 'filter'} onClick={() => setFiltro(cat.value)}>{cat.label}</button>)}</div><div className="products-grid">{visibles.map((producto) => <ProductCard key={producto.codigo} producto={producto} />)}</div></main>; }
+
+export function Productos() {
+  const [filtro, setFiltro] = useState('todos');
+  const { productos, cargando, error } = useProductos();
+
+  const categorias = [
+    { label: 'Todos', value: 'todos' },
+    ...[...new Set(productos.map(p => p.categoria))]
+      .filter(Boolean)
+      .map(categoria => ({
+        label: categoria,
+        value: categoria
+      }))
+  ];
+
+  const visibles = filtro === 'todos'
+    ? productos
+    : productos.filter(p => p.categoria === filtro);
+
+  return (
+    <main className="catalog-page container">
+      <div className="section-heading">
+        <div>
+          <span className="eyebrow">Nuestra selección</span>
+          <h1>Productos frescos</h1>
+        </div>
+        <p>
+          Explora nuestra variedad de productos frescos
+          y naturales para tu hogar.
+        </p>
+      </div>
+
+      {cargando && <p>Cargando productos...</p>}
+
+      {error && (
+        <p role="alert">
+          No se pudieron cargar los productos: {error}
+        </p>
+      )}
+
+      {!cargando && !error && (
+        <>
+          <div className="filters">
+            {categorias.map(cat => (
+              <button
+                key={cat.value}
+                className={
+                  filtro === cat.value
+                    ? 'filter active'
+                    : 'filter'
+                }
+                onClick={() => setFiltro(cat.value)}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="products-grid">
+            {visibles.map(producto => (
+              <ProductCard
+                key={producto.codigo}
+                producto={producto}
+              />
+            ))}
+          </div>
+
+          {visibles.length === 0 && (
+            <p>No hay productos disponibles.</p>
+          )}
+        </>
+      )}
+    </main>
+  );
+}
 
 export function Carrito() { const { items, total, cambiarCantidad, eliminar } = useCart(); const navigate = useNavigate(); const confirmar = () => { if (!items.length) return; alert('¡Gracias por tu compra! Esta demo no procesa pagos reales.'); navigate('/'); }; return <main className="cart-page container"><div className="section-heading"><div><span className="eyebrow">Tu selección</span><h1>Mi carrito</h1></div><p>{items.length ? `${items.length} producto(s) seleccionado(s)` : 'Aún no has agregado productos.'}</p></div>{!items.length ? <div className="empty-state"><div className="empty-icon">＋</div><h2>Tu carrito está vacío</h2><p>Agrega productos frescos para comenzar tu compra.</p><Link to="/productos" className="btn btn-primary">Ver productos</Link></div> : <div className="cart-layout"><div className="cart-items">{items.map(({ producto, cantidad }) => <article className="cart-item" key={producto.codigo}><img src={producto.img} alt={producto.nombre} /><div className="cart-item-info"><span className="product-category">{producto.categoria}</span><h2>{producto.nombre}</h2><p>{formatoCLP(producto.precio)} por {producto.unidad}</p><div className="quantity"><button onClick={() => cambiarCantidad(producto.codigo, -1)} aria-label="Disminuir">−</button><strong>{cantidad}</strong><button onClick={() => cambiarCantidad(producto.codigo, 1)} aria-label="Aumentar">+</button></div></div><div className="cart-item-side"><strong>{formatoCLP(producto.precio * cantidad)}</strong><button className="remove" onClick={() => eliminar(producto.codigo)}>Eliminar</button></div></article>)}</div><aside className="order-summary"><span className="eyebrow">Resumen</span><h2>Resumen de compra</h2><div className="summary-line"><span>Subtotal</span><strong>{formatoCLP(total)}</strong></div><div className="summary-line"><span>Despacho</span><span className="free">Gratis</span></div><div className="summary-total"><span>Total</span><strong>{formatoCLP(total)}</strong></div><button className="btn btn-primary btn-full" onClick={confirmar}>Confirmar compra</button></aside></div>}</main>; }
 

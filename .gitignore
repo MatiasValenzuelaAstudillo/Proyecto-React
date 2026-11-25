@@ -1,1 +1,21 @@
-node_modules
+node_modules# Dependencias de React
+**/node_modules/
+
+# Compilaciones de React
+**/dist/
+
+# Compilaciones de Spring Boot
+**/target/
+
+# Variables de entorno y contraseñas
+**/.env
+**/.env.*
+!**/.env.example
+
+# Configuración de editores
+**/.idea/
+**/.vscode/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
