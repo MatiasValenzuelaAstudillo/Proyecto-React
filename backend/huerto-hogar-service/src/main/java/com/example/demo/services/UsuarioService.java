@@ -5,6 +5,8 @@ import com.example.demo.dto.RegistroResponse;
 import com.example.demo.models.entities.Rol;
 import com.example.demo.models.entities.Usuario;
 import com.example.demo.repositories.UsuarioRepository;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.LoginResponse;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,5 +62,35 @@ public class UsuarioService {
                 guardado.getRol().name()
         );
     }
+
+    public LoginResponse iniciarSesion(LoginRequest request) {
+
+        String email = request.email().trim();
+
+        Usuario usuario = usuarioRepository
+            .findByEmailIgnoreCase(email)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Correo o contraseña incorrectos"
+            ));
+
+        if (!passwordEncoder.matches(
+                request.password(),
+                usuario.getPasswordHash())) {
+
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Correo o contraseña incorrectos"
+            );
+        }
+
+        return new LoginResponse(
+            usuario.getId(),
+            usuario.getNombre(),
+            usuario.getEmail(),
+            usuario.getRol().name()
+        );
+    }
+
 }
 
